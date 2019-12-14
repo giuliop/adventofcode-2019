@@ -1,5 +1,6 @@
 (require '[intcode-computer :as computer]
-           '[clojure.set :as sets])
+         '[clojure.set :as sets]
+         '[clojure.string :as str])
 
 (def input-signal 0)
 
