@@ -37,7 +37,7 @@
   (case tile-id
     0 " "
     1 "\u2588"
-    2 "\u2591"
+    2 "X"
     3 "\u25AC"
     4 "\u25CF"))
 
@@ -94,6 +94,7 @@
           (draw new-scr) (println))
         (if ended? (score new-scr)
           (let [input [(input-ai new-scr scr)]]
+          ;(let [input [(biginteger (read-line))]]
             (recur (computer/run input mem pc base true)
                    new-scr
                    (conj moves (first input)))))))))
