@@ -1,4 +1,5 @@
 (require '[intcode-computer :as computer :reload true] '[math :reload true]
+         '[clojure.set :as sets]
          '[clojure.edn :as edn]
          '[clojure.string :as string])
 
@@ -128,10 +129,14 @@
   "Returns the entry with the associated type (wall, space...)"
   [(first entry) (assoc (second entry) :type atype)])
 
+(defn goal-entry [explored]
+  "Returns the entry respresenting the goal"
+  (first (filter #(= goal (:type (second %))) explored)))
+
 (defn astar
   "Return the minimum path to reach goal as a vector of coordinates"
-  ([] (astar false))
-  ([draw?]
+  ([] (astar false false))
+  ([draw? full-map?]
    (loop [current [[0 0] {:len 0 :path [[0 0]] :type start}]
           [to-explore explored] (add-paths current {}
                                            (add-entry current {}))
@@ -145,8 +150,9 @@
            current [current-pos (explored current-pos)]
            current (if (= wall out) current entry)]
        (when draw? (do (read-line)(draw explored to-explore)))
-       (cond (= goal out) [entry explored to-explore]
-             (empty? to-explore) ["Cannot find the goal" explored to-explore]
+       (cond (and (= goal out) (not full-map?)) [entry explored to-explore]
+             (empty? to-explore) [(goal-entry explored) explored to-explore]
+             ;(empty? to-explore) [(goal explored) explored to-explore]
              :else (recur current [to-explore explored] state))))))
 
 (defn tile-glyph [tile-id]
@@ -170,9 +176,7 @@
              [x y])]
     (->> (map tile-glyph (map #(:type (explored %)) xy))
          (partition (inc (- maxX minX)))
-         ;(map
          (interpose "\n")
-         ;(into (repeat y-center "\n"))
          (apply concat)
          (string/join ))))
 
@@ -191,3 +195,22 @@
 
 (defn answer-part-1 []
   (:len (second (first (astar)))))
+
+(defn answer-part-2 []
+  "Takes a map of the world and calculates how many turns it takes to fill
+  it with oxygen"
+  (let [[start world _] (astar false true)
+        start (first start)]
+    (loop [locations (set (map first
+                               (filter #(= space (:type (second %))) world)))
+           frontier #{start}
+           steps 0]
+      (if (empty? locations) steps
+        (let [frontier (reduce (fn [acc pos]
+                                 (into acc (sets/intersection
+                                             locations
+                                             (set (adjacents pos)))))
+                               #{}
+                               frontier)
+              locations (sets/difference locations frontier)]
+          (recur locations frontier (inc steps)))))))
